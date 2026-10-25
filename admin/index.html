@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Stom Space · Админка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Same tokens as the public site (index.html) so the admin feels like part of it. */
+:root {
+  --bg: #f2f5f4; --surface: #ffffff; --sunk: #e8eeec; --ink: #15232a; --muted: #5a6a70; --line: #d7dfdc;
+  --accent: #b0385a; --accent-ink: #ffffff; --accent-soft: #f6e3e8;
+  --good: #22745f; --good-soft: #dcefe8; --bad: #b23a2e; --bad-soft: #f8e1dd; --warn-soft: #f7ecd9;
+  --rose: #b0385a; --teal: #237468; --amber: #a5661a;
+  --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1618; --surface: #162125; --sunk: #1c2a2f; --ink: #e6eeec; --muted: #94a5a8; --line: #27373c;
+    --accent: #e26c8c; --accent-ink: #1a0b10; --accent-soft: #3a1d26;
+    --good: #5cc4a4; --good-soft: #173a31; --bad: #f08a7e; --bad-soft: #3d1f1b; --warn-soft: #3a2e1a;
+    --rose: #e26c8c; --teal: #52b9a8; --amber: #e0a356;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1618; --surface: #162125; --sunk: #1c2a2f; --ink: #e6eeec; --muted: #94a5a8; --line: #27373c;
+  --accent: #e26c8c; --accent-ink: #1a0b10; --accent-soft: #3a1d26;
+  --good: #5cc4a4; --good-soft: #173a31; --bad: #f08a7e; --bad-soft: #3d1f1b; --warn-soft: #3a2e1a;
+  --rose: #e26c8c; --teal: #52b9a8; --amber: #e0a356;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 { font-size: clamp(1.5rem, 3.5vw, 2.1rem); }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1rem; font-weight: 500; }
+p { margin: 0; }
+a { color: var(--accent); }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 920px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+.top { position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 12px 16px; padding-block: 10px; flex-wrap: wrap; }
+.logo { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; letter-spacing: -0.02em; white-space: nowrap; }
+.logo i { font-style: normal; color: var(--accent); }
+.logo small { font-family: var(--font-mono); font-weight: 400; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-left: 8px; }
+.nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.nav a { padding: 7px 12px; border-radius: 999px; color: var(--muted); font-weight: 500; text-decoration: none; white-space: nowrap; }
+.nav a[aria-current="page"] { background: var(--sunk); color: var(--ink); }
+.top .actions { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.status { font-size: .85rem; color: var(--muted); }
+.status.dirty { color: var(--amber); font-weight: 600; }
+@media (max-width: 700px) { .top { position: static; } .top .actions { margin-left: 0; width: 100%; } .status { flex: 1; } }
+
+main { padding-block: 28px 80px; display: grid; gap: 24px; }
+.eyebrow { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+.crumbs { display: flex; gap: 8px; flex-wrap: wrap; font-size: .9rem; color: var(--muted); }
+.crumbs a { color: var(--muted); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid transparent; border-radius: 10px; padding: 9px 16px; font-weight: 600; background: var(--accent); color: var(--accent-ink); text-decoration: none; white-space: nowrap; }
+.btn:hover { filter: brightness(1.06); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { background: var(--sunk); filter: none; }
+.btn.danger { background: transparent; color: var(--bad); border-color: var(--line); }
+.btn.danger:hover { background: var(--bad-soft); filter: none; }
+.btn.sm { padding: 6px 12px; font-size: .88rem; border-radius: 8px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.icon { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); padding: 0; font-size: .95rem; flex: none; }
+.icon:hover { background: var(--sunk); color: var(--ink); }
+.icon.del:hover { background: var(--bad-soft); color: var(--bad); }
+.icon[disabled] { opacity: .35; cursor: default; background: var(--surface); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.spread { display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 16px; }
+.panel > h2 { display: flex; gap: 10px; align-items: center; }
+.panel > h2 .num { font-family: var(--font-mono); font-size: .8rem; font-weight: 500; width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.grid2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+label.f { display: grid; gap: 6px; font-weight: 500; font-size: .92rem; }
+label.f .hint, .hint { font-weight: 400; color: var(--muted); font-size: .82rem; }
+input[type=text], input[type=number], input[type=date], input[type=password], input[type=url], select, textarea {
+  width: 100%; font: inherit; font-weight: 400; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+textarea { resize: vertical; min-height: 44px; field-sizing: content; }
+input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; flex: none; }
+.check { display: flex; gap: 10px; align-items: center; font-weight: 500; }
+
+.list { display: grid; gap: 8px; }
+.item { display: flex; gap: 8px; align-items: flex-start; }
+.item > .grow { flex: 1; min-width: 0; }
+.item > .n { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); width: 22px; padding-top: 10px; text-align: right; flex: none; }
+.tools { display: flex; gap: 4px; flex: none; padding-top: 3px; }
+
+.cards { display: grid; gap: 10px; }
+.card { display: flex; gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.card .stripe { width: 6px; align-self: stretch; border-radius: 3px; background: var(--c, var(--accent)); flex: none; }
+.card .body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.card .body h3 { overflow-wrap: anywhere; }
+.card .meta { color: var(--muted); font-size: .85rem; display: flex; gap: 4px 12px; flex-wrap: wrap; }
+.card a.body { color: inherit; text-decoration: none; }
+.card a.body:hover h3 { color: var(--accent); }
+.chip { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
+.chip.warn { background: var(--warn-soft); color: var(--amber); }
+
+.sub { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 12px; background: var(--bg); }
+.sub .head { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.opt { display: flex; gap: 8px; align-items: center; }
+.opt input[type=text] { background: var(--surface); }
+.sub textarea, .sub input[type=text], .sub input[type=number] { background: var(--surface); }
+
+.media-field { display: flex; gap: 8px; flex-wrap: wrap; }
+.media-field input { flex: 1 1 260px; }
+.media-field .btn { position: relative; overflow: hidden; }
+.media-field input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.media-state { font-size: .82rem; color: var(--muted); }
+.media-state.ok { color: var(--good); }
+.media-state.bad { color: var(--bad); }
+
+.notice { border-radius: 12px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--sunk); }
+.notice.good { background: var(--good-soft); color: var(--good); }
+.notice.bad { background: var(--bad-soft); color: var(--bad); }
+.notice.warn { background: var(--warn-soft); color: var(--amber); }
+.notice ul { margin: 6px 0 0; padding-left: 20px; }
+.notice > div { display: grid; gap: 4px; }
+.empty { color: var(--muted); padding: 16px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; }
+
+.login { max-width: 460px; margin: 48px auto; }
+.login details { font-size: .92rem; }
+.login summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.login ol { padding-left: 20px; margin: 10px 0 0; display: grid; gap: 6px; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatches label { display: flex; gap: 6px; align-items: center; padding: 6px 12px 6px 8px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: .9rem; }
+.swatches label:has(input:checked) { border-color: var(--ink); }
+.swatches i { width: 16px; height: 16px; border-radius: 50%; background: var(--c); }
+.swatches input { position: absolute; opacity: 0; pointer-events: none; }
+.foot-actions { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<header class="top" id="top" hidden>
+  <div class="wrap">
+    <span class="logo">Stom<i>·</i>Space<small>админка</small></span>
+    <nav class="nav" id="nav">
+      <a href="#courses" data-tab="courses">Курсы</a>
+      <a href="#lifehacks" data-tab="lifehacks">Лайфхаки</a>
+      <a href="#articles" data-tab="articles">Статьи</a>
+    </nav>
+    <div class="actions">
+      <span class="status" id="status"></span>
+      <button class="btn" id="save" disabled>Сохранить на сайт</button>
+      <a class="btn ghost" href="../" target="_blank" rel="noopener">Открыть сайт</a>
+      <button class="btn ghost" id="logout" title="Выйти и забыть ключ на этом устройстве">Выйти</button>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+
+<script>
+(() => {
+  // Where content lives. Saving commits content.json to this repo via the GitHub API;
+  // GitHub Pages redeploys the site within a minute or two.
+  const REPO = { owner: 'yelzhassay', name: 'stom-space', branch: 'main', file: 'content.json', media: 'media' };
+  const API = `https://api.github.com/repos/${REPO.owner}/${REPO.name}`;
+  const TOKEN_KEY = 'stom-admin-token';
+  const DRAFT_KEY = 'stom-admin-draft';
+  const MAX_UPLOAD_MB = 45;
+  const HUES = [['rose', 'Розовый'], ['teal', 'Бирюзовый'], ['amber', 'Янтарный']];
+
+  const app = document.getElementById('app');
+  const $status = document.getElementById('status');
+  const $save = document.getElementById('save');
+
+  let token = '';
+  let data = null;      // working copy of content.json
+  let sha = null;       // blob sha of the content.json we loaded (for conflict detection)
+  let savedJson = '';   // serialized last-saved content, to know if there are changes
+  let notice = null;    // { kind, html } shown above the current view
+  let saving = false;
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const store = {
+    get(k) { try { return localStorage.getItem(k) || sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v, persist = true) { try { (persist ? localStorage : sessionStorage).setItem(k, v); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) {} },
+  };
+  const uid = p => `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+  const today = () => new Date().toISOString().slice(0, 10);
+  const plural = (n, a, b, c) => { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c; };
+
+  // ---------- GitHub API ----------
+  async function gh(path, opts = {}) {
+    const r = await fetch(API + path, {
+      ...opts,
+      cache: 'no-store',
+      headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) },
+    });
+    if (!r.ok) {
+      const err = new Error(`GitHub ${r.status}`);
+      err.status = r.status;
+      try { err.body = await r.json(); } catch (e) {}
+      throw err;
+    }
+    return r.status === 204 ? null : r.json();
+  }
+  const b64ToText = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
+  function bytesToB64(bytes) {
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  const textToB64 = t => bytesToB64(new TextEncoder().encode(t));
+  const encPath = p => p.split('/').map(encodeURIComponent).join('/');
+
+  async function loadContent() {
+    const f = await gh(`/contents/${encPath(REPO.file)}?ref=${REPO.branch}`);
+    // The contents API omits the body for files over 1 MB; fall back to the blob API.
+    const b64 = f.content || (await gh(`/git/blobs/${f.sha}`)).content;
+    return { sha: f.sha, json: JSON.parse(b64ToText(b64)) };
+  }
+
+  // ---------- state helpers ----------
+  const serialize = () => JSON.stringify(data, null, 2) + '\n';
+  const isDirty = () => data && serialize() !== savedJson;
+  function getAt(path) { return path.split('.').reduce((o, k) => o?.[k], data); }
+  function setAt(path, v) {
+    const ks = path.split('.'); const last = ks.pop();
+    const o = ks.reduce((o, k) => o[k], data); o[last] = v;
+  }
+  function changed() {
+    const dirty = isDirty();
+    // The draft survives reloads and failed saves; it is removed only after a successful save or by the user.
+    if (dirty) store.set(DRAFT_KEY, JSON.stringify({ sha, at: Date.now(), data }));
+    $status.textContent = saving ? 'Сохраняю…' : dirty ? 'Есть несохранённые изменения' : 'Все изменения сохранены';
+    $status.classList.toggle('dirty', dirty && !saving);
+    $save.disabled = !dirty || saving;
+  }
+  window.addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ---------- small render helpers ----------
+  const text = (path, label, { hint = '', placeholder = '' } = {}) =>
+    `<label class="f">${label}${hint ? ` <span class="hint">${hint}</span>` : ''}<input type="text" data-bind="${path}" value="${esc(getAt(path))}" placeholder="${esc(placeholder)}"></label>`;
+  const area = (path, label, { hint = '', placeholder = '', rows = 3 } = {}) =>
+    `<label class="f">${label}${hint ? ` <span class="hint">${hint}</span>` : ''}<textarea rows="${rows}" data-bind="${path}" placeholder="${esc(placeholder)}">${esc(getAt(path))}</textarea></label>`;
+  const num = (path, label, { hint = '', min = 0, max = '' } = {}) =>
+    `<label class="f">${label}${hint ? ` <span class="hint">${hint}</span>` : ''}<input type="number" data-bind="${path}" data-type="number" min="${min}" max="${max}" value="${esc(getAt(path))}"></label>`;
+  // Reorder / delete buttons for element i of the array at `path`.
+  const tools = (path, i, len, what) => `<div class="tools">
+      <button class="icon" data-act="up" data-path="${path}" data-i="${i}" ${i === 0 ? 'disabled' : ''} title="Выше" aria-label="Переместить выше">↑</button>
+      <button class="icon" data-act="down" data-path="${path}" data-i="${i}" ${i === len - 1 ? 'disabled' : ''} title="Ниже" aria-label="Переместить ниже">↓</button>
+      <button class="icon del" data-act="del" data-path="${path}" data-i="${i}" data-what="${esc(what)}" title="Удалить" aria-label="Удалить">✕</button>
+    </div>`;
+  // Editable list of strings (конспект, материалы, шаги).
+  function strList(path, label, { hint = '', addLabel = 'Добавить пункт', placeholder = '' } = {}) {
+    const arr = getAt(path);
+    return `<div class="f" style="display:grid;gap:8px"><div><b style="font-weight:500;font-size:.92rem">${label}</b>${hint ? ` <span class="hint">${hint}</span>` : ''}</div>
+      <div class="list">${arr.length ? arr.map((s, i) => `<div class="item"><span class="n">${i + 1}</span><div class="grow"><textarea rows="1" data-bind="${path}.${i}" placeholder="${esc(placeholder)}">${esc(s)}</textarea></div>${tools(path, i, arr.length, 'пункт')}</div>`).join('') : '<p class="hint">Пока пусто.</p>'}</div>
+      <div><button class="btn ghost sm" data-act="add" data-path="${path}" data-kind="string">+ ${addLabel}</button></div></div>`;
+  }
+  function mediaInfo(v) {
+    v = (v || '').trim();
+    if (!v) return ['', 'Ролика пока нет: на сайте будет заглушка «Видео скоро появится».'];
+    if (/youtu\.?be/.test(v)) return ['ok', 'YouTube ✓'];
+    if (/drive\.google\.com/.test(v)) return ['ok', 'Google Drive ✓ (файл должен быть открыт по ссылке)'];
+    if (/^media\//.test(v)) return ['ok', 'Файл на сайте ✓'];
+    if (/^https?:\/\//.test(v)) return ['ok', 'Ссылка на файл'];
+    return ['bad', 'Не похоже на ссылку. Вставьте ссылку на YouTube или Google Drive, либо загрузите файл.'];
+  }
+  function media(path, label, kind) {
+    const [cls, msg] = mediaInfo(getAt(path));
+    return `<div class="f" style="display:grid;gap:6px"><b style="font-weight:500;font-size:.92rem">${label}</b>
+      <div class="media-field"><input type="text" data-bind="${path}" data-media value="${esc(getAt(path))}" placeholder="Ссылка на YouTube или Google Drive">
+      <span class="btn ghost">Загрузить файл<input type="file" accept="${kind}/*" data-upload="${path}" aria-label="Загрузить файл: ${esc(label)}"></span></div>
+      <span class="media-state ${cls}" data-state="${path}">${msg}</span></div>`;
+  }
+  const noticeHtml = () => notice ? `<div class="notice ${notice.kind}" role="status"><div>${notice.html}</div><button class="icon" data-act="close-notice" aria-label="Закрыть">✕</button></div>` : '';
+
+  // ---------- views ----------
+  function route() {
+    const [tab, a, b] = (location.hash.slice(1) || 'courses').split('/');
+    return { tab, a: a == null ? null : +a, b: b == null ? null : +b };
+  }
+
+  function render() {
+    if (!data) return;
+    const r = route();
+    const tabName = r.tab === 'course' || r.tab === 'lesson' ? 'courses' : r.tab === 'article' ? 'articles' : r.tab;
+    document.querySelectorAll('#nav a').forEach(a => { if (a.dataset.tab === tabName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    let html;
+    if (r.tab === 'course' && data.courses[r.a]) html = courseView(r.a);
+    else if (r.tab === 'lesson' && data.courses[r.a]?.lessons[r.b]) html = lessonView(r.a, r.b);
+    else if (r.tab === 'lifehacks') html = lifehacksView();
+    else if (r.tab === 'articles') html = articlesView();
+    else if (r.tab === 'article' && data.articles[r.a]) html = articleView(r.a);
+    else html = coursesView();
+    app.innerHTML = noticeHtml() + html;
+    changed();
+  }
+
+  function coursesView() {
+    const cs = data.courses;
+    return `<div class="spread"><div><span class="eyebrow">Материалы</span><h1>Курсы</h1></div>
+        <button class="btn" data-act="new-course">+ Новый курс</button></div>
+      <div class="cards">${cs.length ? cs.map((c, i) => `<div class="card" style="--c:var(--${esc(c.hue)})"><span class="stripe"></span>
+          <a class="body" href="#course/${i}"><h3>${esc(c.title) || '<span class="muted">Без названия</span>'}</h3>
+          <div class="meta"><span>${c.lessons.length} ${plural(c.lessons.length, 'урок', 'урока', 'уроков')}</span><span>${esc(c.level)}</span>${c.soon ? '<span class="chip warn">Скоро</span>' : ''}</div></a>
+          ${tools('courses', i, cs.length, `курс «${c.title}»`)}</div>`).join('') : '<p class="empty">Курсов пока нет.</p>'}</div>`;
+  }
+
+  function courseView(ci) {
+    const c = data.courses[ci], p = `courses.${ci}`;
+    return `<div class="crumbs"><a href="#courses">Курсы</a><span>/</span><span>${esc(c.title)}</span></div>
+      <h1>${esc(c.title) || 'Новый курс'}</h1>
+      <section class="panel"><h2>О курсе</h2>
+        ${text(`${p}.title`, 'Название')}
+        ${text(`${p}.subtitle`, 'Подзаголовок', { placeholder: 'Например: базовый курс для молодых врачей' })}
+        <div class="grid2">${text(`${p}.author`, 'Автор')}${text(`${p}.level`, 'Уровень', { placeholder: 'Начальный, Средний, Продвинутый' })}</div>
+        ${area(`${p}.description`, 'Описание', { rows: 4 })}
+        <div class="f" style="display:grid;gap:8px"><b style="font-weight:500;font-size:.92rem">Цвет карточки</b><div class="swatches">
+          ${HUES.map(([v, n]) => `<label style="--c:var(--${v})"><input type="radio" name="hue" data-bind="${p}.hue" value="${v}" ${c.hue === v ? 'checked' : ''}><i></i>${n}</label>`).join('')}</div></div>
+        <label class="check"><input type="checkbox" data-bind="${p}.soon" data-type="flag" ${c.soon ? 'checked' : ''}> Скоро: курс виден, но закрыт <span class="hint">(уберите галочку, когда курс готов)</span></label>
+      </section>
+      <section class="panel"><div class="spread"><h2>Уроки</h2><button class="btn sm" data-act="new-lesson" data-ci="${ci}">+ Добавить урок</button></div>
+        <div class="cards">${c.lessons.length ? c.lessons.map((l, i) => `<div class="card"><span class="n eyebrow">${i + 1}</span>
+          <a class="body" href="#lesson/${ci}/${i}"><h3>${esc(l.title) || '<span class="muted">Без названия</span>'}</h3>
+          <div class="meta"><span>${esc(l.duration)}</span><span>${l.quiz.questions.length} ${plural(l.quiz.questions.length, 'вопрос', 'вопроса', 'вопросов')} в тесте</span>${l.quiz.questions.length ? '' : '<span class="chip warn">Нет теста</span>'}</div></a>
+          ${tools(`${p}.lessons`, i, c.lessons.length, `урок «${l.title}»`)}</div>`).join('') : '<p class="empty">Уроков пока нет.</p>'}</div>
+      </section>
+      <div class="foot-actions"><a class="btn ghost" href="#courses">← Ко всем курсам</a>
+        <button class="btn danger" data-act="del" data-path="courses" data-i="${ci}" data-what="курс «${esc(c.title)}» со всеми уроками" data-back="#courses">Удалить курс</button></div>`;
+  }
+
+  function lessonView(ci, li) {
+    const c = data.courses[ci], l = c.lessons[li], p = `courses.${ci}.lessons.${li}`;
+    const qs = l.quiz.questions;
+    return `<div class="crumbs"><a href="#courses">Курсы</a><span>/</span><a href="#course/${ci}">${esc(c.title)}</a><span>/</span><span>Урок ${li + 1}</span></div>
+      <h1>${esc(l.title) || 'Новый урок'}</h1>
+      <section class="panel"><div class="grid2">${text(`${p}.title`, 'Название урока')}${text(`${p}.duration`, 'Длительность', { placeholder: '40 мин' })}</div></section>
+      <section class="panel"><h2><span class="num">1</span>Лекция</h2>
+        ${media(`${p}.lecture.video`, 'Видео лекции', 'video')}
+        ${media(`${p}.lecture.audio`, 'Аудио лекции', 'audio')}
+        ${strList(`${p}.lecture.summary`, 'Конспект', { hint: 'каждый пункт отдельным абзацем', addLabel: 'Добавить пункт конспекта' })}
+      </section>
+      <section class="panel"><h2><span class="num">2</span>Практическое занятие</h2>
+        ${media(`${p}.practical.video`, 'Видео практики', 'video')}
+        ${strList(`${p}.practical.materials`, 'Материалы', { addLabel: 'Добавить материал', placeholder: 'Например: удалённые зубы' })}
+        ${strList(`${p}.practical.steps`, 'Шаги', { hint: 'студент отмечает каждый шаг галочкой', addLabel: 'Добавить шаг' })}
+      </section>
+      <section class="panel"><h2><span class="num">3</span>Тест</h2>
+        <div style="max-width:260px">${num(`${p}.quiz.pass`, 'Проходной балл, %', { min: 1, max: 100, hint: 'обычно 70' })}</div>
+        ${qs.length ? qs.map((q, qi) => questionHtml(`${p}.quiz.questions`, q, qi, qs.length)).join('') : '<p class="empty">Вопросов пока нет. Без вопросов урок нельзя завершить, поэтому добавьте хотя бы один.</p>'}
+        <div><button class="btn ghost sm" data-act="add" data-path="${p}.quiz.questions" data-kind="question">+ Добавить вопрос</button></div>
+      </section>
+      <div class="foot-actions"><a class="btn ghost" href="#course/${ci}">← К курсу</a>
+        <button class="btn danger" data-act="del" data-path="courses.${ci}.lessons" data-i="${li}" data-what="урок «${esc(l.title)}»" data-back="#course/${ci}">Удалить урок</button></div>`;
+  }
+
+  function questionHtml(path, q, qi, len) {
+    const qp = `${path}.${qi}`;
+    return `<div class="sub"><div class="head"><span class="eyebrow">Вопрос ${qi + 1}</span>${tools(path, qi, len, `вопрос ${qi + 1}`)}</div>
+      <textarea rows="2" data-bind="${qp}.q" placeholder="Текст вопроса" aria-label="Текст вопроса ${qi + 1}">${esc(q.q)}</textarea>
+      <div class="list"><span class="hint">Варианты ответа. Отметьте кружком правильный.</span>
+        ${q.options.map((o, oi) => `<div class="opt"><input type="radio" name="ans-${qp}" data-bind="${qp}.answer" data-type="number" value="${oi}" ${q.answer === oi ? 'checked' : ''} aria-label="Правильный ответ: вариант ${oi + 1}">
+          <input type="text" data-bind="${qp}.options.${oi}" value="${esc(o)}" placeholder="Вариант ${oi + 1}">
+          <button class="icon del" data-act="del" data-path="${qp}.options" data-i="${oi}" data-quiet ${q.options.length <= 2 ? 'disabled' : ''} title="Удалить вариант" aria-label="Удалить вариант">✕</button></div>`).join('')}
+        <div><button class="btn ghost sm" data-act="add" data-path="${qp}.options" data-kind="string">+ Вариант</button></div></div>
+      <label class="f">Пояснение <span class="hint">показывается после ответа</span><textarea rows="1" data-bind="${qp}.explain">${esc(q.explain)}</textarea></label></div>`;
+  }
+
+  function lifehacksView() {
+    const hs = data.lifehacks;
+    return `<div class="spread"><div><span class="eyebrow">Материалы</span><h1>Лайфхаки</h1></div>
+        <button class="btn" data-act="add" data-path="lifehacks" data-kind="lifehack" data-front>+ Новый лайфхак</button></div>
+      ${hs.length ? hs.map((h, i) => `<section class="panel"><div class="spread"><span class="eyebrow">Лайфхак ${i + 1}</span>${tools('lifehacks', i, hs.length, `лайфхак «${h.title}»`)}</div>
+          <div class="grid2">${text(`lifehacks.${i}.title`, 'Заголовок')}${text(`lifehacks.${i}.tag`, 'Тема', { placeholder: 'Реставрация, Эндодонтия…', hint: 'по ней фильтруют на сайте' })}</div>
+          ${area(`lifehacks.${i}.text`, 'Текст', { rows: 3 })}</section>`).join('') : '<p class="empty">Лайфхаков пока нет.</p>'}`;
+  }
+
+  function articlesView() {
+    const as = data.articles;
+    return `<div class="spread"><div><span class="eyebrow">Материалы</span><h1>Статьи</h1></div>
+        <button class="btn" data-act="new-article">+ Новая статья</button></div>
+      <div class="cards">${as.length ? as.map((a, i) => `<div class="card"><a class="body" href="#article/${i}"><h3>${esc(a.title) || '<span class="muted">Без названия</span>'}</h3>
+          <div class="meta"><span>${esc(a.tag)}</span><span>${esc(a.date)}</span><span>${a.readMin} мин</span></div></a>
+          ${tools('articles', i, as.length, `статью «${a.title}»`)}</div>`).join('') : '<p class="empty">Статей пока нет.</p>'}</div>`;
+  }
+
+  function articleView(ai) {
+    const a = data.articles[ai], p = `articles.${ai}`;
+    return `<div class="crumbs"><a href="#articles">Статьи</a><span>/</span><span>${esc(a.title)}</span></div>
+      <h1>${esc(a.title) || 'Новая статья'}</h1>
+      <section class="panel">
+        ${text(`${p}.title`, 'Заголовок')}
+        <div class="grid2">${text(`${p}.tag`, 'Тема', { placeholder: 'Эстетика, Эндодонтия…' })}
+          <label class="f">Дата<input type="date" data-bind="${p}.date" value="${esc(a.date)}"></label>
+          ${num(`${p}.readMin`, 'Время чтения, мин', { min: 1 })}</div>
+        ${area(`${p}.lead`, 'Вступление', { hint: 'видно в списке статей', rows: 2 })}
+      </section>
+      <section class="panel"><h2>Текст статьи</h2>
+        <div class="list" style="gap:12px">${a.body.length ? a.body.map((b, i) => `<div class="item"><div class="grow">${typeof b === 'string'
+            ? `<span class="hint">Абзац</span><textarea rows="3" data-bind="${p}.body.${i}" aria-label="Абзац">${esc(b)}</textarea>`
+            : `<span class="hint">Подзаголовок</span><input type="text" data-bind="${p}.body.${i}.h" value="${esc(b.h)}" style="font-weight:600" aria-label="Подзаголовок">`}</div>
+            ${tools(`${p}.body`, i, a.body.length, typeof b === 'string' ? 'абзац' : 'подзаголовок')}</div>`).join('') : '<p class="empty">Текста пока нет.</p>'}</div>
+        <div class="row"><button class="btn ghost sm" data-act="add" data-path="${p}.body" data-kind="string">+ Абзац</button>
+          <button class="btn ghost sm" data-act="add" data-path="${p}.body" data-kind="heading">+ Подзаголовок</button></div>
+      </section>
+      <div class="foot-actions"><a class="btn ghost" href="#articles">← Ко всем статьям</a>
+        <button class="btn danger" data-act="del" data-path="articles" data-i="${ai}" data-what="статью «${esc(a.title)}»" data-back="#articles">Удалить статью</button></div>`;
+  }
+
+  // ---------- new items ----------
+  const NEW = {
+    string: () => '',
+    heading: () => ({ h: '' }),
+    question: () => ({ q: '', options: ['', ''], answer: 0, explain: '' }),
+    lifehack: () => ({ id: uid('lh'), tag: '', title: '', text: '' }),
+    lesson: c => ({ id: uid(c.id), title: '', duration: '', lecture: { video: '', audio: '', summary: [] }, practical: { video: '', materials: [], steps: [] }, quiz: { pass: 70, questions: [] } }),
+    course: () => ({ id: uid('course'), title: '', subtitle: '', author: 'Асель Куатовна', level: 'Начальный', hue: 'rose', description: '', soon: true, lessons: [] }),
+    article: () => ({ id: uid('art'), tag: '', title: '', readMin: 5, date: today(), lead: '', body: [] }),
+  };
+
+  // ---------- events ----------
+  document.addEventListener('input', e => {
+    const t = e.target, path = t.dataset.bind;
+    if (!path || !data) return;
+    let v = t.value;
+    if (t.dataset.type === 'flag') v = t.checked;
+    else if (t.dataset.type === 'number') v = v === '' ? 0 : Number(v);
+    if (t.dataset.type === 'flag' && !v) { const ks = path.split('.'); const k = ks.pop(); delete getAt(ks.join('.'))[k]; }
+    else setAt(path, v);
+    if (t.dataset.media != null) {
+      const [cls, msg] = mediaInfo(v); const s = app.querySelector(`[data-state="${CSS.escape(path)}"]`);
+      if (s) { s.className = `media-state ${cls}`; s.textContent = msg; }
+    }
+    changed();
+  });
+  // Radios and checkboxes fire 'change' reliably everywhere; route them through the same handler.
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset.bind && (t.type === 'radio' || t.type === 'checkbox')) t.dispatchEvent(new Event('input', { bubbles: true }));
+    if (t.dataset.upload) upload(t);
+  });
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (!b || !data) return;
+    const d = b.dataset, act = d.act;
+    if (act === 'close-notice') { notice = null; render(); return; }
+    if (act === 'restore-draft') { restoreDraft(); return; }
+    if (act === 'drop-draft') { store.del(DRAFT_KEY); notice = null; render(); return; }
+    if (act === 'new-course') { data.courses.push(NEW.course()); location.hash = `course/${data.courses.length - 1}`; changed(); return; }
+    if (act === 'new-lesson') { const c = data.courses[+d.ci]; c.lessons.push(NEW.lesson(c)); location.hash = `lesson/${d.ci}/${c.lessons.length - 1}`; changed(); return; }
+    if (act === 'new-article') { data.articles.unshift(NEW.article()); location.hash = 'article/0'; if (route().tab === 'article') render(); changed(); return; }
+    const arr = getAt(d.path), i = +d.i;
+    if (act === 'add') {
+      if (d.front != null) arr.unshift(NEW[d.kind]()); else arr.push(NEW[d.kind]());
+      render();
+      const n = d.front != null ? 0 : arr.length - 1;
+      const el = app.querySelector(`[data-bind="${d.path}.${n}"], [data-bind^="${d.path}.${n}."]`);
+      if (el) { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+      return;
+    }
+    if (act === 'up' || act === 'down') {
+      const j = act === 'up' ? i - 1 : i + 1;
+      if (j < 0 || j >= arr.length) return;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      render(); return;
+    }
+    if (act === 'del') {
+      if (d.quiet == null && !confirm(`Удалить ${d.what}?`)) return;
+      arr.splice(i, 1);
+      if (/\.options$/.test(d.path)) {
+        const q = getAt(d.path.replace(/\.options$/, ''));
+        if (q.answer === i) q.answer = 0; else if (q.answer > i) q.answer--;
+      }
+      if (d.back) { location.hash = d.back.slice(1); changed(); } else render();
+    }
+  });
+  window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+
+  // ---------- media upload ----------
+  function safeName(name) {
+    const map = { а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',ә:'a',ғ:'g',қ:'k',ң:'n',ө:'o',ұ:'u',ү:'u',һ:'h',і:'i' };
+    const dot = name.lastIndexOf('.');
+    const ext = dot > 0 ? name.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, '') : 'bin';
+    const base = (dot > 0 ? name.slice(0, dot) : name).toLowerCase().split('').map(ch => map[ch] ?? ch).join('')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'file';
+    return `${base}-${Date.now().toString(36)}.${ext}`;
+  }
+  async function upload(input) {
+    const file = input.files[0], path = input.dataset.upload;
+    input.value = '';
+    if (!file) return;
+    const s = app.querySelector(`[data-state="${CSS.escape(path)}"]`);
+    const say = (cls, msg) => { if (s) { s.className = `media-state ${cls}`; s.textContent = msg; } };
+    const mb = file.size / 1048576;
+    if (mb > MAX_UPLOAD_MB) {
+      say('bad', `Файл ${mb.toFixed(0)} МБ слишком большой (максимум ${MAX_UPLOAD_MB} МБ). Загрузите его на YouTube (можно «доступ по ссылке») или в Google Drive и вставьте ссылку.`);
+      return;
+    }
+    const target = `${REPO.media}/${safeName(file.name)}`;
+    say('', `Загружаю ${file.name} (${mb.toFixed(1)} МБ)… Не закрывайте страницу.`);
+    try {
+      const b64 = bytesToB64(new Uint8Array(await file.arrayBuffer()));
+      await gh(`/contents/${encPath(target)}`, { method: 'PUT', body: JSON.stringify({ message: `Админка: загружен файл ${target}`, content: b64, branch: REPO.branch }) });
+      setAt(path, target);
+      const field = app.querySelector(`[data-bind="${CSS.escape(path)}"]`);
+      if (field) field.value = target;
+      changed();
+      say('ok', 'Файл загружен ✓ Нажмите «Сохранить на сайт», чтобы он появился в уроке.');
+    } catch (err) {
+      say('bad', `Не удалось загрузить файл (${errText(err)}).`);
+    }
+  }
+
+  // ---------- validation & save ----------
+  function validate() {
+    const errors = [];
+    const ids = new Set();
+    const uniq = (id, where) => { if (!id) errors.push(`${where}: нет идентификатора.`); else if (ids.has(id)) errors.push(`${where}: идентификатор «${id}» повторяется.`); ids.add(id); };
+    data.courses.forEach((c, ci) => {
+      const cn = `Курс «${c.title || ci + 1}»`;
+      uniq(c.id, cn);
+      if (!c.title.trim()) errors.push(`Курс ${ci + 1}: нет названия.`);
+      c.lessons.forEach((l, li) => {
+        const ln = `${cn}, урок ${li + 1}`;
+        uniq(l.id, ln);
+        if (!l.title.trim()) errors.push(`${ln}: нет названия.`);
+        if (!c.soon && !l.quiz.questions.length) errors.push(`${ln}: в тесте нет вопросов (или отметьте курс как «Скоро»).`);
+        if (!(l.quiz.pass > 0 && l.quiz.pass <= 100)) errors.push(`${ln}: проходной балл должен быть от 1 до 100.`);
+        l.quiz.questions.forEach((q, qi) => {
+          if (!q.q.trim()) errors.push(`${ln}, вопрос ${qi + 1}: нет текста вопроса.`);
+          if (q.options.filter(o => o.trim()).length < q.options.length) errors.push(`${ln}, вопрос ${qi + 1}: есть пустой вариант ответа.`);
+        });
+      });
+    });
+    data.lifehacks.forEach((h, i) => { uniq(h.id, `Лайфхак ${i + 1}`); if (!h.title.trim()) errors.push(`Лайфхак ${i + 1}: нет заголовка.`); });
+    data.articles.forEach((a, i) => { uniq(a.id, `Статья ${i + 1}`); if (!a.title.trim()) errors.push(`Статья ${i + 1}: нет заголовка.`); });
+    return errors;
+  }
+
+  function cleanup() {
+    // Drop empty list entries so the site doesn't show blank bullets.
+    data.courses.forEach(c => c.lessons.forEach(l => {
+      for (const arr of [l.lecture.summary, l.practical.materials, l.practical.steps]) for (let i = arr.length - 1; i >= 0; i--) if (!arr[i].trim()) arr.splice(i, 1);
+    }));
+    data.articles.forEach(a => { a.body = a.body.filter(b => typeof b === 'string' ? b.trim() : b.h.trim()); });
+  }
+
+  const errText = err => err.status === 401 ? 'ключ доступа недействителен или истёк'
+    : err.status === 403 || err.status === 404 ? 'у ключа нет прав на запись в репозиторий'
+    : err.status === 409 || err.status === 422 ? 'файл изменился на GitHub'
+    : err.status ? `ошибка GitHub ${err.status}` : 'нет связи с GitHub';
+
+  $save.addEventListener('click', async () => {
+    if (saving || !isDirty()) return;
+    cleanup();
+    const errors = validate();
+    if (errors.length) {
+      notice = { kind: 'bad', html: `<b>Не сохранено. Исправьте:</b><ul>${errors.slice(0, 12).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${errors.length > 12 ? `<span>…и ещё ${errors.length - 12}</span>` : ''}` };
+      render(); window.scrollTo(0, 0); return;
+    }
+    saving = true; changed();
+    const body = serialize();
+    try {
+      const res = await gh(`/contents/${encPath(REPO.file)}`, { method: 'PUT', body: JSON.stringify({ message: 'Админка: обновлены материалы', content: textToB64(body), sha, branch: REPO.branch }) });
+      sha = res.content.sha; savedJson = body; store.del(DRAFT_KEY);
+      notice = { kind: 'good', html: '<b>Сохранено.</b> <span>Сайт обновится через 1–2 минуты. <a href="../" target="_blank" rel="noopener">Открыть сайт</a></span>' };
+    } catch (err) {
+      notice = err.status === 409 || err.status === 422
+        ? { kind: 'bad', html: '<b>Не сохранено: content.json изменили в другом месте</b> (на GitHub или в другой вкладке). <span>Ваши правки сохранены в черновике. Обновите страницу и нажмите «Восстановить черновик», затем сохраните снова.</span>' }
+        : { kind: 'bad', html: `<b>Не сохранено</b>: ${esc(errText(err))}.` };
+    }
+    saving = false; render(); window.scrollTo(0, 0);
+  });
+
+  function restoreDraft() {
+    try { data = JSON.parse(store.get(DRAFT_KEY)).data; } catch (e) { return; }
+    notice = { kind: 'good', html: '<b>Черновик восстановлен.</b> <span>Проверьте и нажмите «Сохранить на сайт».</span>' };
+    render();
+  }
+
+  // ---------- login ----------
+  function loginView(msg = '') {
+    document.getElementById('top').hidden = true;
+    app.innerHTML = `<form class="panel login" id="login">
+      <div><span class="eyebrow">Stom Space</span><h1>Вход в админку</h1></div>
+      <p class="muted small">Здесь можно добавлять, менять и удалять курсы, уроки, тесты, лайфхаки и статьи. Для входа нужен ключ доступа GitHub к репозиторию сайта.</p>
+      ${msg ? `<div class="notice bad"><div>${esc(msg)}</div></div>` : ''}
+      <label class="f">Ключ доступа<input type="password" id="token" autocomplete="current-password" placeholder="github_pat_…" required></label>
+      <label class="check small"><input type="checkbox" id="remember" checked> Запомнить на этом устройстве</label>
+      <button class="btn" type="submit">Войти</button>
+      <details><summary>Где взять ключ</summary><ol>
+        <li>Владелец сайта входит на GitHub и открывает <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">создание ключа (fine-grained token)</a>.</li>
+        <li><b>Repository access</b>: Only select repositories → <code>${REPO.owner}/${REPO.name}</code>.</li>
+        <li><b>Permissions → Repository permissions → Contents</b>: Read and write.</li>
+        <li>Срок действия: до года. Нажмите <b>Generate token</b>, скопируйте ключ и вставьте сюда.</li>
+      </ol><p class="hint" style="margin-top:8px">Ключ даёт право менять только этот сайт. Храните его как пароль. Если ключ попал к чужим людям, удалите его на той же странице GitHub.</p></details>
+    </form>`;
+    const form = document.getElementById('login');
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = form.querySelector('button[type=submit]');
+      btn.disabled = true; btn.textContent = 'Проверяю…';
+      token = document.getElementById('token').value.trim();
+      try {
+        const repo = await gh('');
+        if (!repo.permissions?.push) throw Object.assign(new Error('no push'), { status: 403 });
+        store.set(TOKEN_KEY, token, document.getElementById('remember').checked);
+        await start();
+      } catch (err) {
+        token = '';
+        loginView(`Не удалось войти: ${errText(err)}.`);
+      }
+    });
+  }
+
+  async function start() {
+    app.innerHTML = '<p class="empty">Загружаю материалы…</p>';
+    const res = await loadContent();
+    data = res.json; sha = res.sha; savedJson = serialize();
+    for (const k of ['courses', 'lifehacks', 'articles']) data[k] ||= [];
+    let draft = null;
+    try { draft = JSON.parse(store.get(DRAFT_KEY)); } catch (e) {}
+    if (draft && JSON.stringify(draft.data, null, 2) + '\n' !== savedJson) {
+      const when = new Date(draft.at).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+      notice = { kind: 'warn', html: `<b>Есть несохранённые правки от ${esc(when)}.</b><span class="row" style="margin-top:6px"><button class="btn sm" data-act="restore-draft">Восстановить черновик</button><button class="btn ghost sm" data-act="drop-draft">Удалить черновик</button></span>` };
+    } else store.del(DRAFT_KEY);
+    document.getElementById('top').hidden = false;
+    render();
+  }
+
+  document.getElementById('logout').addEventListener('click', () => {
+    if (isDirty() && !confirm('Есть несохранённые изменения. Они останутся в черновике на этом устройстве. Выйти?')) return;
+    store.del(TOKEN_KEY); token = ''; data = null; notice = null; savedJson = '';
+    loginView();
+  });
+
+  token = store.get(TOKEN_KEY) || '';
+  if (token) start().catch(err => { if (err.status === 401) store.del(TOKEN_KEY); loginView(`Не удалось загрузить материалы: ${errText(err)}.`); });
+  else loginView();
+})();
+</script>
+</body>
+</html>
