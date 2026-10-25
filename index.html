@@ -573,7 +573,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wr
     if (t.dataset.step != null) { const l = currentLesson(); if (!l) return; lp(l.id).steps[+t.dataset.step] = t.checked; save(); render(); }
   });
 
-  fetch('content.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  fetch('content.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(data => { C = data; render(); })
     .catch(() => { app.innerHTML = '<p class="empty">Не удалось загрузить content.json. Откройте сайт через веб-сервер (например, GitHub Pages), а не как локальный файл.</p>'; });
 })();
