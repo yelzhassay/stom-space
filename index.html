@@ -1,0 +1,581 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style></head><body>
+<title>Stom Space</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky header, wide reading column; lesson view = lesson rail + stage panel. Porcelain ground, gingiva-rose accent. */
+:root {
+  --bg: #f2f5f4;
+  --surface: #ffffff;
+  --sunk: #e8eeec;
+  --ink: #15232a;
+  --muted: #5a6a70;
+  --line: #d7dfdc;
+  --accent: #b0385a;
+  --accent-ink: #ffffff;
+  --accent-soft: #f6e3e8;
+  --good: #22745f;
+  --good-soft: #dcefe8;
+  --bad: #b23a2e;
+  --bad-soft: #f8e1dd;
+  --rose: #b0385a;
+  --teal: #237468;
+  --amber: #a5661a;
+  --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1618; --surface: #162125; --sunk: #1c2a2f; --ink: #e6eeec; --muted: #94a5a8; --line: #27373c;
+    --accent: #e26c8c; --accent-ink: #1a0b10; --accent-soft: #3a1d26;
+    --good: #5cc4a4; --good-soft: #173a31; --bad: #f08a7e; --bad-soft: #3d1f1b;
+    --rose: #e26c8c; --teal: #52b9a8; --amber: #e0a356;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1618; --surface: #162125; --sunk: #1c2a2f; --ink: #e6eeec; --muted: #94a5a8; --line: #27373c;
+  --accent: #e26c8c; --accent-ink: #1a0b10; --accent-soft: #3a1d26;
+  --good: #5cc4a4; --good-soft: #173a31; --bad: #f08a7e; --bad-soft: #3d1f1b;
+  --rose: #e26c8c; --teal: #52b9a8; --amber: #e0a356;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.15; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(1.8rem, 4.5vw, 2.9rem); }
+h2 { font-size: clamp(1.25rem, 2.6vw, 1.6rem); }
+h3 { font-size: 1.05rem; font-weight: 500; }
+p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 20px; padding-block: 12px; flex-wrap: wrap; }
+.logo { display: flex; align-items: baseline; gap: 2px; font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; background: none; border: 0; padding: 0; letter-spacing: -0.02em; }
+.logo i { font-style: normal; color: var(--accent); }
+.nav { display: flex; gap: 4px; overflow-x: auto; margin-left: auto; scrollbar-width: none; max-width: 100%; }
+.nav button { background: none; border: 0; padding: 7px 12px; border-radius: 999px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.nav button[aria-current="page"] { background: var(--sunk); color: var(--ink); }
+.nav button:hover { color: var(--ink); }
+@media (max-width: 640px) { .nav { margin-left: 0; width: 100%; } }
+
+main { padding-block: 32px 56px; display: grid; gap: 48px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lead { color: var(--muted); font-size: 1.08rem; max-width: 60ch; }
+.section-head { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; border-radius: 10px; padding: 10px 18px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
+.btn:hover { filter: brightness(1.06); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { background: var(--sunk); filter: none; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: center; }
+.hero > * { min-width: 0; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .text { display: grid; gap: 18px; }
+.path { display: flex; gap: 0; align-items: center; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); }
+.path span { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.path b { width: 18px; height: 1px; background: var(--line); }
+.continue { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px; display: grid; gap: 14px; }
+@media (max-width: 820px) { .hero { grid-template-columns: 1fr; } }
+
+/* course cards */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 12px; align-content: start; text-align: left; min-width: 0; }
+button.card:hover { border-color: var(--muted); }
+.swatch { height: 6px; border-radius: 3px; background: var(--c, var(--accent)); width: 48px; }
+.meta { display: flex; gap: 8px 14px; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
+.chip.good { background: var(--good-soft); color: var(--good); }
+.chip.accent { background: var(--accent-soft); color: var(--accent); }
+.bar { height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--good); border-radius: 3px; }
+
+/* lifehacks */
+.hacks { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.hack { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; display: grid; gap: 6px; align-content: start; }
+.hack p { color: var(--muted); font-size: 0.95rem; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+.filters button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; font-size: 0.9rem; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* articles */
+.articles { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.article-row { display: grid; grid-template-columns: 140px 1fr auto; gap: 20px; padding: 18px 0; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; align-items: baseline; }
+.article-row > * { min-width: 0; }
+.article-row:hover h3 { color: var(--accent); }
+.article-row p { color: var(--muted); font-size: 0.95rem; margin-top: 4px; }
+@media (max-width: 640px) { .article-row { grid-template-columns: 1fr; gap: 4px; } }
+.prose { max-width: 66ch; display: grid; gap: 16px; }
+.prose h2 { font-size: 1.2rem; margin-top: 12px; }
+
+/* course page */
+.course-head { display: grid; gap: 14px; }
+.lessons { display: grid; gap: 10px; counter-reset: l; }
+.lesson-row { display: grid; grid-template-columns: 44px 1fr auto; gap: 16px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 18px; text-align: left; }
+.lesson-row > * { min-width: 0; }
+.lesson-row[disabled] { opacity: .55; cursor: not-allowed; }
+.num { font-family: var(--font-mono); font-size: 0.9rem; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--sunk); color: var(--muted); }
+.num.done { background: var(--good-soft); color: var(--good); }
+
+/* lesson page */
+.lesson { display: grid; grid-template-columns: 260px 1fr; gap: 28px; align-items: start; }
+.lesson > * { min-width: 0; }
+.rail { display: grid; gap: 6px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 80px); }
+.rail button { text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 10px; display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: center; font-size: 0.92rem; }
+.rail button[aria-current="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--line); font-weight: 600; }
+.rail button[disabled] { opacity: .45; cursor: not-allowed; }
+.rail .num { width: 26px; height: 26px; font-size: 0.75rem; }
+@media (max-width: 860px) { .lesson { grid-template-columns: 1fr; } .rail { position: static; display: flex; overflow-x: auto; } .rail button { white-space: nowrap; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(18px, 3vw, 28px); display: grid; gap: 22px; }
+.stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.stages button { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; text-align: left; display: grid; gap: 2px; min-width: 0; }
+.stages button small { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.stages button span { font-weight: 600; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stages button[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.stages button.done small { color: var(--good); }
+.stages button[disabled] { opacity: .45; cursor: not-allowed; }
+.media { aspect-ratio: 16 / 9; max-width: 100%; width: 100%; border-radius: 12px; overflow: hidden; background: var(--sunk); display: grid; place-items: center; }
+.media iframe, .media video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+.media.audio { aspect-ratio: auto; padding: 24px; }
+.media.audio audio { width: 100%; }
+.placeholder { display: grid; gap: 8px; justify-items: center; text-align: center; color: var(--muted); padding: 20px; }
+.placeholder svg { width: 44px; height: 44px; }
+.seg { display: inline-flex; background: var(--sunk); border-radius: 10px; padding: 3px; }
+.seg button { border: 0; background: none; padding: 6px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .08); }
+.notes { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.notes li { padding-left: 22px; position: relative; max-width: 70ch; }
+.notes li::before { content: ""; position: absolute; left: 4px; top: .65em; width: 8px; height: 8px; border-radius: 2px; background: var(--accent); }
+.checks { display: grid; gap: 8px; }
+.check { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; padding: 12px 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--good); }
+.check.on span { color: var(--muted); text-decoration: line-through; }
+.done-note { display: flex; gap: 10px; align-items: center; color: var(--good); font-weight: 600; }
+
+/* quiz */
+.q { display: grid; gap: 16px; }
+.q-count { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.opts { display: grid; gap: 8px; }
+.opt { text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 12px 16px; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: baseline; }
+.opt b { font-family: var(--font-mono); font-weight: 500; color: var(--muted); }
+.opt:hover:not([disabled]) { border-color: var(--muted); }
+.opt.right { border-color: var(--good); background: var(--good-soft); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.opt[disabled] { cursor: default; }
+.explain { padding: 12px 16px; border-radius: 10px; background: var(--sunk); font-size: 0.95rem; }
+.score { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+.grade { font-family: var(--font-display); font-size: 3.4rem; line-height: 1; width: 96px; height: 96px; border-radius: 22px; display: grid; place-items: center; background: var(--good-soft); color: var(--good); }
+.grade.fail { background: var(--bad-soft); color: var(--bad); }
+.review { display: grid; gap: 8px; font-size: 0.92rem; }
+.review div { display: grid; grid-template-columns: 20px 1fr; gap: 10px; }
+
+/* progress */
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; }
+.stat b { display: block; font-family: var(--font-display); font-size: 1.8rem; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 0.88rem; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 480px; font-size: 0.94rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--font-mono); font-weight: 500; font-size: 0.75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+td.n { font-variant-numeric: tabular-nums; }
+
+footer { border-top: 1px solid var(--line); }
+footer .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 20px; color: var(--muted); font-size: 0.88rem; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+.toggle input { accent-color: var(--accent); }
+.crumbs { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: 0.9rem; }
+.crumbs button { background: none; border: 0; padding: 0; color: var(--muted); }
+.crumbs button:hover { color: var(--accent); }
+.empty { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: var(--r); }
+@media (prefers-reduced-motion: no-preference) { .fade { animation: fade .25s ease-out; } @keyframes fade { from { opacity: .4; transform: translateY(4px); } } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <button class="logo" data-go="home" aria-label="Stom Space, на главную">stom<i>·</i>space</button>
+    <nav class="nav" id="nav">
+      <button data-go="home">Главная</button>
+      <button data-go="courses">Курсы</button>
+      <button data-go="hacks">Лайфхаки</button>
+      <button data-go="articles">Статьи</button>
+      <button data-go="progress">Мой прогресс</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="app"><p class="empty">Загружаем курсы…</p></main>
+<footer>
+  <div class="wrap">
+    <span>Stom Space · онлайн-обучение стоматологии</span>
+    <label class="toggle"><input type="checkbox" id="author-mode"> Режим автора (все уроки открыты)</label>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const STORE = 'stomspace.progress.v1';
+  const app = document.getElementById('app');
+  let C = null;
+  let view = { name: 'home' };
+  let quiz = null;
+  let lectureMode = 'video';
+  let hackTag = 'Все';
+
+  // ---------- storage ----------
+  function load() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
+  let P = load();
+  P.lessons = P.lessons || {};
+  if (/[?&]author\b/.test(location.search)) P.author = true;
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} }
+  const lp = id => (P.lessons[id] = P.lessons[id] || { lecture: false, practical: false, steps: [], best: null });
+
+  // ---------- helpers ----------
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const course = id => C.courses.find(c => c.id === id);
+  const passed = l => { const p = P.lessons[l.id]; return !!p && p.best != null && p.best >= l.quiz.pass; };
+  const lessonOpen = (c, i) => P.author || i === 0 || passed(c.lessons[i - 1]);
+  const stageOpen = (l, s) => P.author || s === 'lecture' || (s === 'practical' && lp(l.id).lecture) || (s === 'quiz' && lp(l.id).practical);
+  const grade = pct => pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : pct >= 50 ? 'E' : 'F';
+  const plural = (n, a, b, c) => { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c; };
+  const fmtDate = d => new Date(d + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  const courseDone = c => c.lessons.filter(passed).length;
+
+  function nextStep() {
+    for (const c of C.courses) {
+      if (c.soon) continue;
+      for (let i = 0; i < c.lessons.length; i++) {
+        const l = c.lessons[i];
+        if (!passed(l) && lessonOpen(c, i)) {
+          const p = lp(l.id);
+          return { c, l, i, stage: !p.lecture ? 'lecture' : !p.practical ? 'practical' : 'quiz' };
+        }
+      }
+    }
+    return null;
+  }
+
+  function go(name, params = {}) {
+    view = Object.assign({ name }, params);
+    if (name !== 'lesson' || params.stage !== 'quiz') quiz = null;
+    render();
+    window.scrollTo({ top: 0 });
+  }
+
+  // ---------- media ----------
+  const ICON_PLAY = '<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2"/><path d="M20 16l13 8-13 8z" fill="currentColor"/></svg>';
+  function embed(src, kind) {
+    if (!src) {
+      return `<div class="media"><div class="placeholder">${ICON_PLAY}<strong>${kind === 'audio' ? 'Аудио' : 'Видео'} скоро появится</strong><span>Автор курса ещё не загрузил запись. Отметьте шаг вручную, чтобы пройти дальше.</span></div></div>`;
+    }
+    let m;
+    if ((m = src.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/))) {
+      return `<div class="media"><iframe src="https://www.youtube.com/embed/${m[1]}?rel=0&playsinline=1" allow="fullscreen; picture-in-picture" allowfullscreen title="Видео урока"></iframe></div>`;
+    }
+    if ((m = src.match(/drive\.google\.com\/file\/d\/([\w-]+)/))) {
+      return `<div class="media"><iframe src="https://drive.google.com/file/d/${m[1]}/preview" allow="fullscreen" allowfullscreen title="Видео урока"></iframe></div>`;
+    }
+    if (/\.(mp3|m4a|ogg|wav)$/i.test(src)) return `<div class="media audio"><audio controls preload="metadata" src="${esc(src)}" data-autodone></audio></div>`;
+    return `<div class="media"><video controls playsinline preload="metadata" src="${esc(src)}" data-autodone></video></div>`;
+  }
+
+  // ---------- views ----------
+  function courseCard(c) {
+    const done = courseDone(c), n = c.lessons.length;
+    const pct = n ? Math.round(done / n * 100) : 0;
+    const tag = c.soon ? '<span class="chip">Скоро</span>' : done === n && n ? '<span class="chip good">Пройден</span>' : done ? `<span class="chip accent">${done} из ${n}</span>` : '';
+    return `<button class="card" data-go="course" data-id="${c.id}" ${c.soon ? 'disabled' : ''} style="--c: var(--${c.hue})">
+      <div class="row" style="justify-content:space-between"><span class="swatch"></span>${tag}</div>
+      <h3>${esc(c.title)}</h3>
+      <p style="color:var(--muted);font-size:.95rem">${esc(c.subtitle)}</p>
+      <div class="meta"><span>${esc(c.level)}</span><span>${n ? n + ' ' + plural(n, 'урок', 'урока', 'уроков') : 'В подготовке'}</span><span>${esc(c.author)}</span></div>
+      ${n ? `<div class="bar" aria-label="Пройдено ${pct}%"><i style="width:${pct}%"></i></div>` : ''}
+    </button>`;
+  }
+
+  function hackCard(h) {
+    return `<article class="hack"><span class="eyebrow">${esc(h.tag)}</span><h3>${esc(h.title)}</h3><p>${esc(h.text)}</p></article>`;
+  }
+  function articleRow(a) {
+    return `<button class="article-row" data-go="article" data-id="${a.id}">
+      <span class="eyebrow">${esc(a.tag)}</span>
+      <div><h3>${esc(a.title)}</h3><p>${esc(a.lead)}</p></div>
+      <span class="meta">${a.readMin} мин</span>
+    </button>`;
+  }
+
+  function vHome() {
+    const ns = nextStep();
+    const stageName = { lecture: 'Лекция', practical: 'Практическое занятие', quiz: 'Тест' };
+    const cont = ns ? `<div class="continue">
+        <span class="eyebrow">Продолжить обучение</span>
+        <h2>${esc(ns.l.title)}</h2>
+        <p style="color:var(--muted)">${esc(ns.c.title)} · урок ${ns.i + 1} · ${stageName[ns.stage]}</p>
+        <div><button class="btn" data-go="lesson" data-course="${ns.c.id}" data-lesson="${ns.l.id}" data-stage="${ns.stage}">Перейти к уроку</button></div>
+      </div>` : `<div class="continue"><span class="eyebrow">Все уроки пройдены</span><h2>Новые курсы уже готовятся</h2><p style="color:var(--muted)">Загляните в лайфхаки и статьи.</p></div>`;
+    return `
+      <section class="hero">
+        <div class="text">
+          <span class="eyebrow">Онлайн-обучение для стоматологов</span>
+          <h1>Стоматология <em>шаг за шагом</em></h1>
+          <p class="lead">Курсы от практикующих врачей. Каждый урок строится одинаково, и следующий открывается после успешного теста.</p>
+          <div class="path" aria-label="Структура урока"><span>Лекция</span><b></b><span>Практика</span><b></b><span>Тест</span><b></b><span>Следующий урок</span></div>
+        </div>
+        ${cont}
+      </section>
+      <section>
+        <div class="section-head"><h2>Курсы</h2><button class="link" data-go="courses">Все курсы</button></div>
+        <div class="grid">${C.courses.map(courseCard).join('')}</div>
+      </section>
+      <section>
+        <div class="section-head"><h2>Лайфхаки</h2><button class="link" data-go="hacks">Все лайфхаки</button></div>
+        <div class="hacks">${C.lifehacks.slice(0, 3).map(hackCard).join('')}</div>
+      </section>
+      <section>
+        <div class="section-head"><h2>Полезные статьи</h2><button class="link" data-go="articles">Все статьи</button></div>
+        <div class="articles">${C.articles.slice(0, 3).map(articleRow).join('')}</div>
+      </section>`;
+  }
+
+  function vCourses() {
+    return `<section><div class="section-head"><div><span class="eyebrow">Каталог</span><h1>Курсы</h1></div></div>
+      <div class="grid">${C.courses.map(courseCard).join('')}</div></section>`;
+  }
+
+  function vCourse() {
+    const c = course(view.id);
+    const n = c.lessons.length, done = courseDone(c);
+    return `<section class="course-head" style="--c: var(--${c.hue})">
+        <div class="crumbs"><button data-go="courses">Курсы</button><span>/</span><span>${esc(c.title)}</span></div>
+        <span class="swatch"></span>
+        <h1>${esc(c.title)}</h1>
+        <p class="lead">${esc(c.description)}</p>
+        <div class="meta"><span>Автор: ${esc(c.author)}</span><span>Уровень: ${esc(c.level)}</span><span>Пройдено ${done} из ${n}</span></div>
+      </section>
+      <section class="lessons">
+        ${c.lessons.map((l, i) => {
+          const open = lessonOpen(c, i), ok = passed(l), best = lp(l.id).best;
+          const status = ok ? `<span class="chip good">Оценка ${grade(best)}</span>` : open ? '<span class="chip accent">Открыт</span>' : '<span class="chip">Закрыт</span>';
+          return `<button class="lesson-row" data-go="lesson" data-course="${c.id}" data-lesson="${l.id}" ${open ? '' : 'disabled'}>
+            <span class="num ${ok ? 'done' : ''}">${ok ? '✓' : i + 1}</span>
+            <div><h3>${esc(l.title)}</h3><div class="meta"><span>${esc(l.duration)}</span><span>Лекция · практика · тест из ${l.quiz.questions.length} вопросов</span></div></div>
+            ${status}
+          </button>`;
+        }).join('')}
+      </section>`;
+  }
+
+  function vLesson() {
+    const c = course(view.course);
+    const i = c.lessons.findIndex(l => l.id === view.lesson);
+    const l = c.lessons[i];
+    const p = lp(l.id);
+    let stage = view.stage || (!p.lecture ? 'lecture' : !p.practical ? 'practical' : 'quiz');
+    if (!stageOpen(l, stage)) stage = 'lecture';
+    view.stage = stage;
+    const stages = [['lecture', 'Лекция', p.lecture], ['practical', 'Практика', p.practical], ['quiz', 'Тест', passed(l)]];
+    const rail = c.lessons.map((x, j) => {
+      const ok = passed(x);
+      return `<button data-go="lesson" data-course="${c.id}" data-lesson="${x.id}" aria-current="${x.id === l.id}" ${lessonOpen(c, j) ? '' : 'disabled'}><span class="num ${ok ? 'done' : ''}">${ok ? '✓' : j + 1}</span><span>${esc(x.title)}</span></button>`;
+    }).join('');
+    let body = '';
+    if (stage === 'lecture') body = stLecture(l, p);
+    else if (stage === 'practical') body = stPractical(l, p);
+    else body = stQuiz(c, l, i);
+    return `<div class="crumbs"><button data-go="courses">Курсы</button><span>/</span><button data-go="course" data-id="${c.id}">${esc(c.title)}</button></div>
+      <div class="lesson">
+        <nav class="rail" aria-label="Уроки курса">${rail}</nav>
+        <section class="panel">
+          <div><span class="eyebrow">Урок ${i + 1} · ${esc(l.duration)}</span><h2 style="margin-top:6px">${esc(l.title)}</h2></div>
+          <div class="stages" role="tablist">${stages.map(([k, name, done], j) =>
+            `<button data-stage-go="${k}" aria-current="${k === stage}" class="${done ? 'done' : ''}" ${stageOpen(l, k) ? '' : 'disabled'}><small>${done ? 'Готово' : 'Шаг ' + (j + 1)}</small><span>${name}</span></button>`).join('')}</div>
+          ${body}
+        </section>
+      </div>`;
+  }
+
+  function stLecture(l, p) {
+    const src = lectureMode === 'audio' ? l.lecture.audio : l.lecture.video;
+    return `<div class="row" style="justify-content:space-between">
+        <h3>Лекция</h3>
+        <div class="seg" role="group" aria-label="Формат лекции">
+          <button data-lmode="video" aria-pressed="${lectureMode === 'video'}">Видео</button>
+          <button data-lmode="audio" aria-pressed="${lectureMode === 'audio'}">Аудио</button>
+        </div>
+      </div>
+      ${embed(src, lectureMode)}
+      <div><h3 style="margin-bottom:12px">Конспект</h3><ul class="notes">${l.lecture.summary.map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>
+      ${p.lecture
+        ? `<div class="row"><span class="done-note">✓ Лекция просмотрена</span><button class="btn" data-stage-go="practical">К практическому занятию</button></div>`
+        : `<div class="row"><button class="btn" data-mark="lecture">Я посмотрел(а) лекцию</button><span style="color:var(--muted);font-size:.9rem">После этого откроется практика.</span></div>`}`;
+  }
+
+  function stPractical(l, p) {
+    const steps = l.practical.steps;
+    const all = steps.every((_, k) => p.steps[k]);
+    return `<h3>Практическое занятие</h3>
+      ${embed(l.practical.video, 'video')}
+      <div><span class="eyebrow">Материалы</span><p style="margin-top:6px">${l.practical.materials.map(esc).join(' · ')}</p></div>
+      <div><h3 style="margin-bottom:12px">Выполните по шагам</h3>
+        <div class="checks">${steps.map((s, k) => `<label class="check ${p.steps[k] ? 'on' : ''}"><input type="checkbox" id="step-${l.id}-${k}" data-step="${k}" ${p.steps[k] ? 'checked' : ''}><span>${esc(s)}</span></label>`).join('')}</div>
+      </div>
+      ${p.practical
+        ? `<div class="row"><span class="done-note">✓ Практика завершена</span><button class="btn" data-stage-go="quiz">К тесту</button></div>`
+        : `<div class="row"><button class="btn" data-mark="practical" ${all || P.author ? '' : 'disabled'}>Завершить практику</button><span style="color:var(--muted);font-size:.9rem">${all ? 'Все шаги отмечены.' : `Отмечено ${steps.filter((_, k) => p.steps[k]).length} из ${steps.length} шагов.`}</span></div>`}`;
+  }
+
+  function stQuiz(c, l, i) {
+    const qs = l.quiz.questions;
+    const best = lp(l.id).best;
+    if (!quiz || quiz.lesson !== l.id) {
+      return `<h3>Тест</h3>
+        <p>${qs.length} ${plural(qs.length, 'вопрос', 'вопроса', 'вопросов')}. Чтобы открыть следующий урок, нужно ответить правильно минимум на ${l.quiz.pass}%.</p>
+        ${best != null ? `<p style="color:var(--muted)">Лучший результат: ${best}% (оценка ${grade(best)}).</p>` : ''}
+        <div><button class="btn" data-quiz="start">${best != null ? 'Пройти ещё раз' : 'Начать тест'}</button></div>`;
+    }
+    if (quiz.idx >= qs.length) {
+      const right = quiz.answers.filter((a, k) => a === qs[k].answer).length;
+      const pct = Math.round(right / qs.length * 100);
+      const ok = pct >= l.quiz.pass;
+      const next = c.lessons[i + 1];
+      return `<div class="score">
+          <div class="grade ${ok ? '' : 'fail'}">${grade(pct)}</div>
+          <div style="display:grid;gap:6px"><h3>${ok ? 'Тест пройден' : 'Тест не пройден'}</h3><p>${right} из ${qs.length} правильных ответов (${pct}%). Проходной порог ${l.quiz.pass}%.</p></div>
+        </div>
+        <div class="review">${qs.map((q, k) => `<div><span>${quiz.answers[k] === q.answer ? '✓' : '✗'}</span><span>${esc(q.q)}</span></div>`).join('')}</div>
+        <div class="row">
+          <button class="btn ghost" data-quiz="start">Пройти ещё раз</button>
+          ${ok && next ? `<button class="btn" data-go="lesson" data-course="${c.id}" data-lesson="${next.id}">Следующий урок</button>` : ''}
+          ${ok && !next ? `<button class="btn" data-go="course" data-id="${c.id}">Курс пройден, к списку уроков</button>` : ''}
+        </div>`;
+    }
+    const q = qs[quiz.idx];
+    const picked = quiz.picked;
+    return `<div class="q">
+        <span class="q-count">Вопрос ${quiz.idx + 1} / ${qs.length}</span>
+        <h3 style="font-size:1.15rem">${esc(q.q)}</h3>
+        <div class="opts">${q.options.map((o, k) => {
+          const cls = picked == null ? '' : k === q.answer ? 'right' : k === picked ? 'wrong' : '';
+          return `<button class="opt ${cls}" data-pick="${k}" ${picked != null ? 'disabled' : ''}><b>${'АБВГД'[k]}</b><span>${esc(o)}</span></button>`;
+        }).join('')}</div>
+        ${picked != null ? `<div class="explain">${picked === q.answer ? 'Верно. ' : 'Неверно. '}${esc(q.explain)}</div>
+          <div><button class="btn" data-quiz="next">${quiz.idx + 1 < qs.length ? 'Следующий вопрос' : 'Посмотреть результат'}</button></div>` : ''}
+      </div>`;
+  }
+
+  function vHacks() {
+    const tags = ['Все', ...new Set(C.lifehacks.map(h => h.tag))];
+    const list = C.lifehacks.filter(h => hackTag === 'Все' || h.tag === hackTag);
+    return `<section><div class="section-head"><div><span class="eyebrow">Коротко и по делу</span><h1>Лайфхаки</h1></div></div>
+      <div class="filters">${tags.map(t => `<button data-tag="${esc(t)}" aria-pressed="${t === hackTag}">${esc(t)}</button>`).join('')}</div>
+      <div class="hacks">${list.map(hackCard).join('')}</div></section>`;
+  }
+
+  function vArticles() {
+    return `<section><div class="section-head"><div><span class="eyebrow">Библиотека</span><h1>Полезные статьи</h1></div></div>
+      <div class="articles">${C.articles.map(articleRow).join('')}</div></section>`;
+  }
+
+  function vArticle() {
+    const a = C.articles.find(x => x.id === view.id);
+    return `<article class="prose fade">
+      <div class="crumbs"><button data-go="articles">Статьи</button><span>/</span><span>${esc(a.tag)}</span></div>
+      <h1>${esc(a.title)}</h1>
+      <div class="meta"><span>${fmtDate(a.date)}</span><span>${a.readMin} мин чтения</span></div>
+      <p class="lead">${esc(a.lead)}</p>
+      ${a.body.map(b => typeof b === 'string' ? `<p>${esc(b)}</p>` : `<h2>${esc(b.h)}</h2>`).join('')}
+      <div><button class="btn ghost" data-go="articles">Все статьи</button></div>
+    </article>`;
+  }
+
+  function vProgress() {
+    const real = C.courses.filter(c => !c.soon);
+    const lessons = real.flatMap(c => c.lessons.map(l => ({ c, l })));
+    const passedN = lessons.filter(x => passed(x.l)).length;
+    const grades = lessons.map(x => P.lessons[x.l.id] && P.lessons[x.l.id].best).filter(v => v != null);
+    const avg = grades.length ? Math.round(grades.reduce((a, b) => a + b, 0) / grades.length) : null;
+    return `<section><div class="section-head"><div><span class="eyebrow">Ваше обучение</span><h1>Мой прогресс</h1></div></div>
+      <div class="stat-row">
+        <div class="stat"><b>${passedN}<span style="font-size:1rem"> / ${lessons.length}</span></b><span>уроков пройдено</span></div>
+        <div class="stat"><b>${real.filter(c => c.lessons.length && courseDone(c) === c.lessons.length).length}</b><span>курсов завершено</span></div>
+        <div class="stat"><b>${avg == null ? '—' : avg + '%'}</b><span>средний результат тестов</span></div>
+      </div></section>
+      <section><div class="table-wrap"><table>
+        <thead><tr><th>Курс</th><th>Урок</th><th>Лекция</th><th>Практика</th><th>Тест</th></tr></thead>
+        <tbody>${lessons.map(({ c, l }) => { const p = P.lessons[l.id] || {};
+          return `<tr><td>${esc(c.title)}</td><td>${esc(l.title)}</td><td>${p.lecture ? '✓' : '—'}</td><td>${p.practical ? '✓' : '—'}</td><td class="n">${p.best != null ? p.best + '% · ' + grade(p.best) : '—'}</td></tr>`; }).join('')}</tbody>
+      </table></div></section>
+      <section class="row">
+        ${view.confirmReset
+          ? `<span>Удалить весь прогресс в этом браузере?</span><button class="btn" data-reset="yes">Да, сбросить</button><button class="btn ghost" data-reset="no">Отмена</button>`
+          : `<button class="btn ghost" data-reset="ask">Сбросить прогресс</button><span style="color:var(--muted);font-size:.9rem">Прогресс хранится в этом браузере.</span>`}
+      </section>`;
+  }
+
+  // ---------- render ----------
+  function render() {
+    const views = { home: vHome, courses: vCourses, course: vCourse, lesson: vLesson, hacks: vHacks, articles: vArticles, article: vArticle, progress: vProgress };
+    app.innerHTML = views[view.name]();
+    const navKey = { course: 'courses', lesson: 'courses', article: 'articles' }[view.name] || view.name;
+    document.querySelectorAll('#nav button').forEach(b => b.setAttribute('aria-current', b.dataset.go === navKey ? 'page' : 'false'));
+    document.getElementById('author-mode').checked = !!P.author;
+    app.querySelectorAll('[data-autodone]').forEach(m => m.addEventListener('ended', () => {
+      const l = currentLesson(); if (!l) return;
+      if (view.stage !== 'lecture') return;
+      lp(l.id).lecture = true; save(); render();
+    }));
+  }
+  const currentLesson = () => view.name === 'lesson' ? course(view.course).lessons.find(l => l.id === view.lesson) : null;
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button');
+    if (!t || t.disabled) return;
+    const d = t.dataset;
+    if (d.go) {
+      if (d.go === 'lesson') { quiz = null; return go('lesson', { course: d.course, lesson: d.lesson, stage: d.stage }); }
+      return go(d.go, d.id ? { id: d.id } : {});
+    }
+    const l = currentLesson();
+    if (d.stageGo) { view.stage = d.stageGo; if (d.stageGo !== 'quiz') quiz = null; render(); return; }
+    if (d.lmode) { lectureMode = d.lmode; render(); return; }
+    if (d.mark && l) { lp(l.id)[d.mark] = true; save(); view.stage = d.mark === 'lecture' ? 'practical' : 'quiz'; render(); return; }
+    if (d.quiz === 'start' && l) { quiz = { lesson: l.id, idx: 0, answers: [], picked: null }; render(); return; }
+    if (d.pick != null && quiz) { quiz.picked = +d.pick; quiz.answers[quiz.idx] = +d.pick; render(); return; }
+    if (d.quiz === 'next' && quiz && l) {
+      quiz.idx++; quiz.picked = null;
+      if (quiz.idx >= l.quiz.questions.length) {
+        const right = quiz.answers.filter((a, k) => a === l.quiz.questions[k].answer).length;
+        const pct = Math.round(right / l.quiz.questions.length * 100);
+        const p = lp(l.id); p.best = Math.max(p.best ?? 0, pct); save();
+      }
+      render(); return;
+    }
+    if (d.tag) { hackTag = d.tag; render(); return; }
+    if (d.reset === 'ask') { view.confirmReset = true; render(); return; }
+    if (d.reset === 'no') { view.confirmReset = false; render(); return; }
+    if (d.reset === 'yes') { P = { lessons: {}, author: P.author }; save(); view.confirmReset = false; render(); return; }
+  });
+
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.id === 'author-mode') { P.author = t.checked; save(); render(); return; }
+    if (t.dataset.step != null) { const l = currentLesson(); if (!l) return; lp(l.id).steps[+t.dataset.step] = t.checked; save(); render(); }
+  });
+
+  fetch('content.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(data => { C = data; render(); })
+    .catch(() => { app.innerHTML = '<p class="empty">Не удалось загрузить content.json. Откройте сайт через веб-сервер (например, GitHub Pages), а не как локальный файл.</p>'; });
+})();
+</script>
+</body></html>
