@@ -158,12 +158,13 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: 18
       <a href="#courses" data-tab="courses">Курсы</a>
       <a href="#lifehacks" data-tab="lifehacks">Лайфхаки</a>
       <a href="#articles" data-tab="articles">Статьи</a>
+      <a href="#users" data-tab="users">Доступ</a>
     </nav>
     <div class="actions">
       <span class="status" id="status"></span>
       <button class="btn" id="save" disabled>Сохранить на сайт</button>
       <a class="btn ghost" href="../" target="_blank" rel="noopener">Открыть сайт</a>
-      <button class="btn ghost" id="logout" title="Выйти и забыть ключ на этом устройстве">Выйти</button>
+      <button class="btn ghost" id="logout" title="Выйти на этом устройстве">Выйти</button>
     </div>
   </div>
 </header>
@@ -177,6 +178,8 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: 18
   const API = `https://api.github.com/repos/${REPO.owner}/${REPO.name}`;
   const TOKEN_KEY = 'stom-admin-token';
   const DRAFT_KEY = 'stom-admin-draft';
+  const USERS_FILE = 'admin/users.json';
+  const MIN_PASSWORD = 10;
   const MAX_UPLOAD_MB = 45;
   const HUES = [['rose', 'Розовый'], ['teal', 'Бирюзовый'], ['amber', 'Янтарный']];
 
@@ -303,6 +306,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: 18
     if (r.tab === 'course' && data.courses[r.a]) html = courseView(r.a);
     else if (r.tab === 'lesson' && data.courses[r.a]?.lessons[r.b]) html = lessonView(r.a, r.b);
     else if (r.tab === 'lifehacks') html = lifehacksView();
+    else if (r.tab === 'users') html = usersView();
     else if (r.tab === 'articles') html = articlesView();
     else if (r.tab === 'article' && data.articles[r.a]) html = articleView(r.a);
     else html = coursesView();
@@ -459,6 +463,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: 18
     if (!b || !data) return;
     const d = b.dataset, act = d.act;
     if (act === 'close-notice') { notice = null; render(); return; }
+    if (act === 'del-user') { delUser(+d.i); return; }
     if (act === 'restore-draft') { restoreDraft(); return; }
     if (act === 'drop-draft') { store.del(DRAFT_KEY); notice = null; render(); return; }
     if (act === 'new-course') { data.courses.push(NEW.course()); location.hash = `course/${data.courses.length - 1}`; changed(); return; }
@@ -593,44 +598,148 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: 18
     render();
   }
 
+  // ---------- logins & passwords ----------
+  // The site is static, so there is no server to check passwords. Instead admin/users.json holds,
+  // for each login, the GitHub key encrypted with that person's password (PBKDF2 + AES-GCM).
+  // Entering the right password decrypts the key in the browser; a wrong one simply fails to decrypt.
+  let users = { list: [], sha: null };
+  const PBKDF2_ITER = 600000;
+  const b64 = bytes => bytesToB64(new Uint8Array(bytes));
+  const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  async function deriveKey(password, salt, iter) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function sealToken(login, password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(password, salt, PBKDF2_ITER);
+    const box = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(token));
+    return { login, salt: b64(salt), iv: b64(iv), iter: PBKDF2_ITER, box: b64(box), created: today() };
+  }
+  async function openToken(u, password) {
+    const key = await deriveKey(password, unb64(u.salt), u.iter);
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(u.iv) }, key, unb64(u.box)));
+  }
+  const sameLogin = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+  async function loadUsers() {
+    try {
+      const f = await gh(`/contents/${encPath(USERS_FILE)}?ref=${REPO.branch}`);
+      users = { list: JSON.parse(b64ToText(f.content)).users || [], sha: f.sha };
+    } catch (err) {
+      if (err.status !== 404) throw err;
+      users = { list: [], sha: null };
+    }
+  }
+  async function saveUsers(list, message) {
+    const body = JSON.stringify({ _help: 'Логины админки. Пароли здесь не хранятся: только ключ доступа, зашифрованный паролем.', users: list }, null, 2) + '\n';
+    const res = await gh(`/contents/${encPath(USERS_FILE)}`, { method: 'PUT', body: JSON.stringify({ message, content: textToB64(body), branch: REPO.branch, ...(users.sha ? { sha: users.sha } : {}) }) });
+    users = { list, sha: res.content.sha };
+  }
+
+  function usersView() {
+    const list = users.list;
+    return `<div><span class="eyebrow">Админка</span><h1>Доступ</h1></div>
+      <section class="panel"><h2>Кто может входить</h2>
+        <p class="muted small">Каждый входит по своему логину и паролю, ключ GitHub никому передавать не нужно.</p>
+        <div class="cards">${list.length ? list.map((u, i) => `<div class="card"><div class="body"><h3>${esc(u.login)}</h3><div class="meta"><span>добавлен ${esc(u.created || '')}</span></div></div>
+          <button class="btn danger sm" data-act="del-user" data-i="${i}">Удалить</button></div>`).join('') : '<p class="empty">Логинов пока нет. Добавьте первый ниже.</p>'}</div>
+      </section>
+      <form class="panel" id="add-user"><h2>Добавить логин или сменить пароль</h2>
+        <div class="grid2"><label class="f">Логин<input type="text" name="login" autocomplete="off" required placeholder="asel"></label>
+          <label class="f">Пароль <span class="hint">не короче ${MIN_PASSWORD} символов</span><input type="password" name="password" autocomplete="new-password" required minlength="${MIN_PASSWORD}"></label></div>
+        <p class="hint">Если такой логин уже есть, у него сменится пароль. Придумайте пароль подлиннее, например из трёх-четырёх слов: от него зависит защита сайта.</p>
+        <div><button class="btn" type="submit">Сохранить логин</button></div>
+      </form>`;
+  }
+
+  document.addEventListener('submit', async e => {
+    if (e.target.id !== 'add-user') return;
+    e.preventDefault();
+    const f = e.target, login = f.login.value.trim(), password = f.password.value;
+    const btn = f.querySelector('button[type=submit]');
+    if (!login || password.length < MIN_PASSWORD) return;
+    const exists = users.list.findIndex(u => sameLogin(u.login, login));
+    btn.disabled = true; btn.textContent = 'Сохраняю…';
+    try {
+      const entry = await sealToken(login, password);
+      const list = users.list.slice();
+      if (exists >= 0) list[exists] = entry; else list.push(entry);
+      await saveUsers(list, exists >= 0 ? `Админка: смена пароля для ${login}` : `Админка: добавлен логин ${login}`);
+      notice = { kind: 'good', html: `<b>${exists >= 0 ? 'Пароль изменён' : 'Логин добавлен'}: ${esc(login)}.</b> <span>Вход заработает через 1–2 минуты, когда сайт обновится.</span>` };
+    } catch (err) {
+      notice = { kind: 'bad', html: `<b>Не удалось сохранить логин</b>: ${esc(errText(err))}.` };
+    }
+    render(); window.scrollTo(0, 0);
+  });
+
+  async function delUser(i) {
+    const u = users.list[i];
+    if (!u || !confirm(`Удалить логин «${u.login}»? Этот человек больше не сможет войти.`)) return;
+    try {
+      await saveUsers(users.list.filter((_, k) => k !== i), `Админка: удалён логин ${u.login}`);
+      notice = { kind: 'good', html: `<b>Логин удалён: ${esc(u.login)}.</b>` };
+    } catch (err) {
+      notice = { kind: 'bad', html: `<b>Не удалось удалить логин</b>: ${esc(errText(err))}.` };
+    }
+    render();
+  }
+
   // ---------- login ----------
-  function loginView(msg = '') {
+  async function publicUsers() {
+    try { const r = await fetch('users.json', { cache: 'no-cache' }); return r.ok ? (await r.json()).users || [] : []; } catch (e) { return []; }
+  }
+
+  async function verifyAndStart(remember) {
+    const repo = await gh('');
+    if (!repo.permissions?.push) throw Object.assign(new Error('no push'), { status: 403 });
+    store.set(TOKEN_KEY, token, remember);
+    await start();
+  }
+
+  async function loginView(msg = '') {
     document.getElementById('top').hidden = true;
-    app.innerHTML = `<form class="panel login" id="login">
-      <div><span class="eyebrow">Stom Space</span><h1>Вход в админку</h1></div>
-      <p class="muted small">Здесь можно добавлять, менять и удалять курсы, уроки, тесты, лайфхаки и статьи. Для входа нужен ключ доступа GitHub к репозиторию сайта.</p>
-      ${msg ? `<div class="notice bad"><div>${esc(msg)}</div></div>` : ''}
-      <label class="f">Ключ доступа<input type="password" id="token" autocomplete="current-password" placeholder="github_pat_…" required></label>
-      <label class="check small"><input type="checkbox" id="remember" checked> Запомнить на этом устройстве</label>
-      <button class="btn" type="submit">Войти</button>
-      <details><summary>Где взять ключ</summary><ol>
+    const list = await publicUsers();
+    const keyForm = `<label class="f">Ключ доступа GitHub<input type="password" id="token" autocomplete="off" placeholder="github_pat_…" ${list.length ? '' : 'required'}></label>`;
+    const keyHelp = `<details><summary>Где взять ключ</summary><ol>
         <li>Владелец сайта входит на GitHub и открывает <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">создание ключа (fine-grained token)</a>.</li>
         <li><b>Repository access</b>: Only select repositories → <code>${REPO.owner}/${REPO.name}</code>.</li>
         <li><b>Permissions → Repository permissions → Contents</b>: Read and write.</li>
-        <li>Срок действия: до года. Нажмите <b>Generate token</b>, скопируйте ключ и вставьте сюда.</li>
-      </ol><p class="hint" style="margin-top:8px">Ключ даёт право менять только этот сайт. Храните его как пароль. Если ключ попал к чужим людям, удалите его на той же странице GitHub.</p></details>
+        <li>Срок действия: лучше «No expiration», иначе после окончания срока логины придётся создать заново. Нажмите <b>Generate token</b>, скопируйте ключ и вставьте сюда.</li>
+      </ol><p class="hint" style="margin-top:8px">Ключ даёт право менять только этот сайт. После входа откройте вкладку «Доступ» и создайте логины с паролями.</p></details>`;
+    app.innerHTML = `<form class="panel login" id="login">
+      <div><span class="eyebrow">Stom Space</span><h1>Вход в админку</h1></div>
+      ${msg ? `<div class="notice bad"><div>${esc(msg)}</div></div>` : ''}
+      ${list.length ? `<label class="f">Логин<input type="text" id="login-name" autocomplete="username" required></label>
+        <label class="f">Пароль<input type="password" id="login-pass" autocomplete="current-password" required></label>`
+      : `<p class="muted small">Первый вход по ключу доступа GitHub. После этого во вкладке «Доступ» можно создать логины и пароли.</p>${keyForm}`}
+      <label class="check small"><input type="checkbox" id="remember" checked> Запомнить на этом устройстве</label>
+      <button class="btn" type="submit">Войти</button>
+      ${list.length ? `<details id="by-key"><summary>Войти по ключу GitHub</summary><div style="display:grid;gap:12px;margin-top:12px">${keyForm}<button class="btn ghost" type="button" id="key-login">Войти по ключу</button></div></details>` : keyHelp}
     </form>`;
     const form = document.getElementById('login');
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
+    const go = async (getToken) => {
       const btn = form.querySelector('button[type=submit]');
       btn.disabled = true; btn.textContent = 'Проверяю…';
-      token = document.getElementById('token').value.trim();
-      try {
-        const repo = await gh('');
-        if (!repo.permissions?.push) throw Object.assign(new Error('no push'), { status: 403 });
-        store.set(TOKEN_KEY, token, document.getElementById('remember').checked);
-        await start();
-      } catch (err) {
-        token = '';
-        loginView(`Не удалось войти: ${errText(err)}.`);
-      }
+      try { token = await getToken(); } catch (e) { token = ''; return loginView('Неверный логин или пароль.'); }
+      try { await verifyAndStart(document.getElementById('remember').checked); }
+      catch (err) { token = ''; loginView(`Не удалось войти: ${errText(err)}.`); }
+    };
+    const byKey = () => go(async () => { const t = document.getElementById('token').value.trim(); if (!t) throw new Error('empty'); return t; });
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!list.length) return byKey();
+      go(() => {
+        const u = list.find(u => sameLogin(u.login, document.getElementById('login-name').value));
+        return u ? openToken(u, document.getElementById('login-pass').value) : Promise.reject(new Error('no user'));
+      });
     });
+    document.getElementById('key-login')?.addEventListener('click', byKey);
   }
 
   async function start() {
     app.innerHTML = '<p class="empty">Загружаю материалы…</p>';
-    const res = await loadContent();
+    const [res] = await Promise.all([loadContent(), loadUsers()]);
     data = res.json; sha = res.sha; savedJson = serialize();
     for (const k of ['courses', 'lifehacks', 'articles']) data[k] ||= [];
     let draft = null;
