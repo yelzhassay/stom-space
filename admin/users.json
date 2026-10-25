@@ -1,0 +1,13 @@
+{
+  "_help": "Логины админки. Пароли здесь не хранятся: только ключ доступа, зашифрованный паролем.",
+  "users": [
+    {
+      "login": "assel",
+      "salt": "copyhN73i5ySe/vaK7UZPQ==",
+      "iv": "AWfQc9HYZMd+SH2A",
+      "iter": 600000,
+      "box": "nTm/5sKM4QE3XsvWiDf53PxAgWxzxvQdoUHPEim5NkY5H4f4Nkr5z/xSGiI3LAQzVulB8NDeSIe0fnIHJGZnDdeVtpXTNNsrrWm7TW9VoTAX4W8t1iTFYgp6jD1Jej+ioDYoWfkTfX7VU86/7g==",
+      "created": "2026-10-25"
+    }
+  ]
+}
